@@ -1,459 +1,847 @@
-# Question 7 — SQL Duplicate Email Addresses
+# SQL Interview Questions & Answers — MERN Developer
 
-## Given SQL Table
+## Database Table Used
 
-Table Name: `Users`
+Hum examples ke liye `Employees` table use karenge.
 
-| Column | Description |
-|---|---|
-| `id` | User ID |
-| `name` | User Name |
-| `email` | User Email |
+```sql
+CREATE TABLE Employees (
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    salary INT,
+    department VARCHAR(100)
+);
+```
+
+Example Data:
+
+```text
+id | name  | email             | salary | department
+---|-------|-------------------|--------|------------
+1  | Amit  | amit@gmail.com    | 50000  | IT
+2  | Rahul | rahul@gmail.com   | 70000  | HR
+3  | Ravi  | ravi@gmail.com    | 60000  | IT
+4  | Aman  | amit@gmail.com    | 50000  | IT
+5  | Neha  | neha@gmail.com    | 90000  | HR
+6  | Raj   | raj@gmail.com     | 80000  | Sales
+```
 
 ---
 
-# Q7.1 — Find Duplicate Email Addresses
+# Q1. Duplicate Records Find Aur Remove Karo
 
 ## Question
 
-Write a SQL query to find duplicate email addresses.
+Write a SQL query to find duplicate email addresses and remove duplicate records while keeping the oldest record.
 
-## Solution
+### Part 1 — Find Duplicate Emails
 
 ```sql
 SELECT email, COUNT(*) AS count
-FROM Users
+FROM Employees
 GROUP BY email
 HAVING COUNT(*) > 1;
 ```
 
----
+### Explanation — Hindi
 
-## Explanation — Hindi + English
+Pehle hum `email` ko `GROUP BY` karenge.
 
-Sabse pehle hum `email` ko `GROUP BY` karenge.
-
-```sql
-GROUP BY email
-```
-
-Isse same email wale records ek group mein aa jayenge.
-
-Phir:
-
-```sql
-COUNT(*)
-```
-
-har email ki total frequency count karega.
-
-Finally:
+`COUNT(*)` se pata chalega ki har email kitni baar aa rahi hai.
 
 ```sql
 HAVING COUNT(*) > 1
 ```
 
-sirf un emails ko return karega jo ek se zyada baar present hain.
+sirf duplicate emails ko return karega.
 
-### Simple Flow
+### Interview Answer
 
-```text
-Users Table
-     ↓
-GROUP BY email
-     ↓
-COUNT(*)
-     ↓
-HAVING COUNT(*) > 1
-     ↓
-Duplicate Emails
-```
+> "Main email ko GROUP BY karunga, COUNT se frequency calculate karunga aur HAVING COUNT(*) > 1 se duplicate emails identify karunga."
 
 ---
 
-# Example
+## Part 2 — Duplicate Remove Karna
 
-Suppose table mein data hai:
-
-```text
-id   name    email
-1    A       a@gmail.com
-2    B       b@gmail.com
-3    C       a@gmail.com
-4    D       c@gmail.com
-5    E       b@gmail.com
-```
-
-Query:
-
-```sql
-SELECT email, COUNT(*) AS count
-FROM Users
-GROUP BY email
-HAVING COUNT(*) > 1;
-```
-
-Output:
-
-```text
-email          count
----------------------
-a@gmail.com     2
-b@gmail.com     2
-```
-
-`c@gmail.com` duplicate nahi hai kyunki wo sirf ek baar hai.
-
----
-
-# Interview Explanation
-
-Interviewer ko bol sakte ho:
-
-> "Main email field ko GROUP BY karunga aur COUNT(*) se har email ki frequency count karunga. HAVING COUNT(*) > 1 use karke sirf duplicate emails ko filter karunga."
-
----
-
-# Q7.2 — Remove Duplicate Records
-
-## Question
-
-Write a query to remove duplicate records while keeping the oldest record.
-
-### Assumption
-
-Yahan hum assume kar rahe hain ki:
+Assume:
 
 ```text
 Smaller ID = Older Record
 ```
 
-Example:
-
-```text
-id = 1 → Oldest
-id = 2 → Newer
-id = 3 → Newer
-```
-
-Isliye duplicate records mein hum smallest `id` ko keep karenge.
-
----
-
-# Solution — MySQL
+Query:
 
 ```sql
-DELETE u1
-FROM Users u1
-JOIN Users u2
-  ON u1.email = u2.email
- AND u1.id > u2.id;
+DELETE e1
+FROM Employees e1
+JOIN Employees e2
+    ON e1.email = e2.email
+    AND e1.id > e2.id;
 ```
 
----
+### Explanation
 
-# Explanation — Hindi + English
-
-Hum same email wale records ko aapas mein compare karenge.
-
-Condition:
+Same email wale records ko compare karenge.
 
 ```sql
-u1.email = u2.email
+e1.email = e2.email
 ```
 
-iska matlab dono records ka email same hona chahiye.
-
-Second condition:
+same email check karta hai.
 
 ```sql
-u1.id > u2.id
+e1.id > e2.id
 ```
 
-iska matlab `u1` ka ID bada hai aur `u2` ka ID chhota hai.
-
-Hum bade ID wale record ko delete karenge.
+bade ID wale record ko identify karta hai.
 
 Isliye:
 
 ```text
-Small ID → Keep
-Large ID → Delete
+Small ID → Oldest → KEEP
+Large ID → Duplicate → DELETE
+```
+
+### Production mein
+
+DELETE se pehle SELECT karke verify karna chahiye:
+
+```sql
+SELECT e1.*
+FROM Employees e1
+JOIN Employees e2
+    ON e1.email = e2.email
+    AND e1.id > e2.id;
 ```
 
 ---
 
-# Example
+# Q2. Second Highest Salary Nikalo
 
-Before:
+## Question
 
-```text
-id   name    email
-1    A       a@gmail.com
-2    B       a@gmail.com
-3    C       b@gmail.com
-4    D       b@gmail.com
-5    E       c@gmail.com
-```
+Write a SQL query to find the second highest salary from the `Employees` table.
 
-Duplicate emails:
-
-```text
-a@gmail.com → 2 records
-b@gmail.com → 2 records
-```
-
-Delete query:
+### Method 1 — DISTINCT + LIMIT
 
 ```sql
-DELETE u1
-FROM Users u1
-JOIN Users u2
-  ON u1.email = u2.email
- AND u1.id > u2.id;
+SELECT DISTINCT salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 1 OFFSET 1;
 ```
 
-After deletion:
+### Explanation
 
 ```text
-id   name    email
-1    A       a@gmail.com
-3    C       b@gmail.com
-5    E       c@gmail.com
+ORDER BY salary DESC
 ```
 
-### Why?
-
-For `a@gmail.com`:
+salary ko highest se lowest order mein sort karega.
 
 ```text
-id 1 → Keep
-id 2 → Delete
+LIMIT 1 OFFSET 1
 ```
 
-For `b@gmail.com`:
+first highest salary ko skip karke second salary return karega.
+
+`DISTINCT` duplicate salaries ko remove karta hai.
+
+---
+
+## Method 2 — Subquery
+
+```sql
+SELECT MAX(salary) AS second_highest
+FROM Employees
+WHERE salary < (
+    SELECT MAX(salary)
+    FROM Employees
+);
+```
+
+### Interview Answer
+
+> "Main pehle maximum salary find karunga aur usse chhoti salaries mein se maximum salary select karunga. Isse second highest distinct salary mil jayegi."
+
+---
+
+# Q3. Nth Highest Salary Nikalo
+
+## Question
+
+Write a SQL query to find the Nth highest salary.
+
+Example:
 
 ```text
-id 3 → Keep
-id 4 → Delete
+N = 3
+```
+
+means third highest salary.
+
+### MySQL — LIMIT / OFFSET
+
+```sql
+SELECT DISTINCT salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 1 OFFSET 2;
+```
+
+General formula:
+
+```text
+OFFSET = N - 1
+```
+
+For example:
+
+```text
+2nd highest → OFFSET 1
+3rd highest → OFFSET 2
+4th highest → OFFSET 3
+Nth highest → OFFSET N-1
 ```
 
 ---
 
-# ⚠️ Important Production Practice
-
-Production database mein directly `DELETE` run nahi karna chahiye.
-
-Pehle same logic ko `SELECT` ke through verify karna better hai.
+## Using DENSE_RANK()
 
 ```sql
-SELECT u1.*
-FROM Users u1
-JOIN Users u2
-  ON u1.email = u2.email
- AND u1.id > u2.id;
+SELECT salary
+FROM (
+    SELECT
+        salary,
+        DENSE_RANK() OVER (ORDER BY salary DESC) AS rank_no
+    FROM Employees
+) AS temp
+WHERE rank_no = 3;
 ```
 
-Ye batayega ki kaunse records delete hone wale hain.
-
-Verify karne ke baad hi:
+Yahan:
 
 ```sql
-DELETE
+DENSE_RANK()
 ```
 
-run karna chahiye.
+salary ko ranking deta hai.
+
+Example:
+
+```text
+Salary | Rank
+-------|-----
+90000  | 1
+80000  | 2
+70000  | 3
+70000  | 3
+60000  | 4
+```
+
+### Interview Answer
+
+> "Nth highest salary ke liye main ORDER BY aur LIMIT/OFFSET use kar sakta hoon. Agar ranking based solution chahiye to DENSE_RANK() use karunga."
 
 ---
 
-# Interview Explanation
+# Q4. Top 5 Highest Salary Nikalo
 
-Interviewer ko bol sakte ho:
+## Question
 
-> "Main same email wale records ko self JOIN ke through compare karunga. Agar u1 ka email u2 ke email ke equal hai aur u1.id > u2.id hai, to u1 newer duplicate record hoga. Main usko delete karunga aur smaller ID wale oldest record ko retain karunga."
+Write a SQL query to find the top 5 highest salaries.
+
+```sql
+SELECT DISTINCT salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 5;
+```
+
+### Explanation
+
+```sql
+ORDER BY salary DESC
+```
+
+highest salary ko top par rakhega.
+
+```sql
+LIMIT 5
+```
+
+top 5 salaries return karega.
+
+### Agar complete employee records chahiye:
+
+```sql
+SELECT *
+FROM Employees
+ORDER BY salary DESC
+LIMIT 5;
+```
+
+### Interview Answer
+
+> "Main salary ko descending order mein sort karke LIMIT 5 use karunga."
 
 ---
 
-# ⭐ Important Concept — Self JOIN
+# Q5. Employees Ki Total Count Nikalo
 
-Yahan hum same table ko do aliases ke saath use kar rahe hain:
+## Question
+
+Write a SQL query to find the total number of employees.
 
 ```sql
-Users u1
-Users u2
+SELECT COUNT(*) AS total_employees
+FROM Employees;
 ```
 
-Ye **Self JOIN** hai.
+### Explanation
 
-Simple meaning:
+`COUNT(*)` table ke total rows count karta hai.
 
-> "Ek table ko khud ke saath join karna Self JOIN kehlata hai."
+Example output:
+
+```text
+total_employees
+---------------
+6
+```
+
+### Interview Answer
+
+> "Total employees count karne ke liye main COUNT(*) use karunga."
+
+---
+
+# Q6. Department-Wise Employee Count Nikalo
+
+## Question
+
+Write a SQL query to find the number of employees in each department.
+
+```sql
+SELECT
+    department,
+    COUNT(*) AS employee_count
+FROM Employees
+GROUP BY department;
+```
+
+### Example Output
+
+```text
+department | employee_count
+-----------|---------------
+IT         | 3
+HR         | 2
+Sales      | 1
+```
+
+### Explanation
+
+```sql
+GROUP BY department
+```
+
+same department ke employees ko ek group mein rakhta hai.
+
+```sql
+COUNT(*)
+```
+
+har department ke employees count karta hai.
+
+### Interview Answer
+
+> "Department-wise count ke liye department ko GROUP BY karunga aur COUNT(*) se har department ke employees count karunga."
+
+---
+
+# Q7. Department-Wise Highest Salary Nikalo
+
+## Question
+
+Write a SQL query to find the highest salary in each department.
+
+```sql
+SELECT
+    department,
+    MAX(salary) AS highest_salary
+FROM Employees
+GROUP BY department;
+```
+
+### Example Output
+
+```text
+department | highest_salary
+-----------|---------------
+IT         | 60000
+HR         | 90000
+Sales      | 80000
+```
+
+### Explanation
+
+`GROUP BY department` har department ka group banata hai.
+
+`MAX(salary)` har group ki highest salary return karta hai.
+
+### Interview Answer
+
+> "Department-wise highest salary ke liye main department ko GROUP BY karunga aur MAX(salary) use karunga."
+
+---
+
+## Agar Complete Employee Record Chahiye
+
+Sirf salary nahi, balki employee ka naam bhi chahiye:
+
+```sql
+SELECT e.*
+FROM Employees e
+JOIN (
+    SELECT
+        department,
+        MAX(salary) AS max_salary
+    FROM Employees
+    GROUP BY department
+) d
+ON e.department = d.department
+AND e.salary = d.max_salary;
+```
+
+Ye har department ke highest-paid employee ko return karega.
+
+---
+
+# Q8. Average Salary Se Zyada Salary Wale Employees Nikalo
+
+## Question
+
+Write a SQL query to find employees whose salary is greater than the average salary.
+
+```sql
+SELECT *
+FROM Employees
+WHERE salary > (
+    SELECT AVG(salary)
+    FROM Employees
+);
+```
+
+### Explanation
+
+Inner query:
+
+```sql
+SELECT AVG(salary)
+FROM Employees;
+```
+
+average salary calculate karegi.
+
+Outer query:
+
+```sql
+WHERE salary > (...)
+```
+
+average se zyada salary wale employees return karegi.
+
+### Flow
+
+```text
+Employees
+    ↓
+AVG(salary)
+    ↓
+Average Salary
+    ↓
+Compare Each Employee
+    ↓
+salary > average
+    ↓
+Result
+```
+
+### Interview Answer
+
+> "Main subquery ke through pehle average salary calculate karunga. Uske baad outer query mein un employees ko filter karunga jinki salary average se greater hai."
+
+---
+
+# Q9. NULL Values Handle Karo
+
+## Question
+
+Write SQL queries to find and handle NULL values in the `email` column.
+
+---
+
+## Find NULL Emails
+
+```sql
+SELECT *
+FROM Employees
+WHERE email IS NULL;
+```
+
+### Important
+
+NULL ke saath:
+
+```sql
+email = NULL
+```
+
+use nahi karna chahiye.
+
+Correct:
+
+```sql
+email IS NULL
+```
+
+---
+
+## Find Non-NULL Emails
+
+```sql
+SELECT *
+FROM Employees
+WHERE email IS NOT NULL;
+```
+
+---
+
+## Replace NULL With Default Value
+
+```sql
+SELECT
+    name,
+    COALESCE(email, 'No Email') AS email
+FROM Employees;
+```
+
+`COALESCE()` first non-NULL value return karta hai.
+
+Example:
+
+```text
+email = NULL
+```
+
+output:
+
+```text
+No Email
+```
+
+---
+
+## Update NULL Values
+
+Agar NULL emails ko default value se update karna ho:
+
+```sql
+UPDATE Employees
+SET email = 'not-provided@example.com'
+WHERE email IS NULL;
+```
+
+### Interview Answer
+
+> "NULL check karne ke liye main IS NULL ya IS NOT NULL use karunga. NULL ko display level par handle karna ho to COALESCE() use kar sakta hoon."
+
+---
+
+# Q10. Duplicate Emails Ko Future Mein Prevent Kaise Karoge?
+
+## Question
+
+Duplicate emails ko database mein future mein insert hone se kaise prevent karoge?
+
+### Solution
+
+`UNIQUE` constraint use karenge.
+
+```sql
+ALTER TABLE Employees
+ADD CONSTRAINT unique_email UNIQUE (email);
+```
+
+Ab same email dobara insert nahi ho sakti.
 
 Example:
 
 ```sql
-FROM Users u1
-JOIN Users u2
+INSERT INTO Employees
+(id, name, email, salary, department)
+VALUES
+(7, 'Rohit', 'amit@gmail.com', 60000, 'IT');
 ```
+
+Agar:
+
+```text
+amit@gmail.com
+```
+
+already exist karta hai, database duplicate insert ko reject karega.
 
 ---
 
-# ⭐ Why `HAVING` Instead of `WHERE`?
+## CREATE TABLE Mein Direct UNIQUE
 
-Ye interview mein poocha ja sakta hai.
-
-### WHERE
-
-`WHERE` grouping se pehle rows ko filter karta hai.
+Agar table create karte time hi constraint lagana ho:
 
 ```sql
-WHERE email = 'a@gmail.com'
+CREATE TABLE Employees (
+    id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    salary INT,
+    department VARCHAR(100)
+);
 ```
 
-### HAVING
+### Interview Answer
 
-`HAVING` grouping ke baad aggregated result ko filter karta hai.
-
-```sql
-HAVING COUNT(*) > 1
-```
-
-Isliye duplicate find karne ke liye:
-
-```sql
-GROUP BY email
-HAVING COUNT(*) > 1
-```
-
-use karte hain.
+> "Future mein duplicate emails prevent karne ke liye main email column par UNIQUE constraint lagaunga. Isse database level par duplicate email insert nahi ho payegi."
 
 ---
 
-# ⭐ WHERE vs HAVING
+# ⭐ Important: Application + Database Validation
 
-| WHERE | HAVING |
-|---|---|
-| Rows ko filter karta hai | Groups ko filter karta hai |
-| GROUP BY se pehle | GROUP BY ke baad |
-| Aggregate functions ke liye generally nahi | Aggregate functions ke saath use hota hai |
-| Example: `WHERE age > 18` | Example: `HAVING COUNT(*) > 1` |
+MERN application mein frontend/backend validation useful hai, lekin database level par `UNIQUE` constraint important hai.
+
+```text
+Frontend Validation
+       ↓
+Backend Validation
+       ↓
+Database UNIQUE Constraint
+```
+
+Database constraint final protection provide karta hai.
 
 ---
 
-# ⭐ Q7 Quick Revision
+# 🔥 Quick Revision
 
-## Duplicate Emails
+## 1. Duplicate Email
 
 ```sql
-SELECT email, COUNT(*) AS count
-FROM Users
+SELECT email, COUNT(*)
+FROM Employees
 GROUP BY email
 HAVING COUNT(*) > 1;
 ```
 
-### Remember:
+---
 
-```text
-GROUP BY email
-      ↓
-COUNT(*)
-      ↓
-HAVING COUNT(*) > 1
-      ↓
-Duplicates
+## 2. Second Highest Salary
+
+```sql
+SELECT DISTINCT salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 1 OFFSET 1;
 ```
 
 ---
 
-# Remove Duplicates
+## 3. Nth Highest Salary
 
 ```sql
-DELETE u1
-FROM Users u1
-JOIN Users u2
-  ON u1.email = u2.email
- AND u1.id > u2.id;
-```
-
-### Remember:
-
-```text
-Same Email
-    ↓
-Compare IDs
-    ↓
-Small ID → Oldest → KEEP
-    ↓
-Large ID → Duplicate → DELETE
+SELECT DISTINCT salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 1 OFFSET N-1;
 ```
 
 ---
 
-# 🎯 One-Minute Interview Answer
-
-Agar interviewer kahe:
-
-## "How would you find and remove duplicate emails?"
-
-Bolna:
-
-> "Duplicate emails find karne ke liye main email par GROUP BY karunga aur COUNT(*) use karunga. HAVING COUNT(*) > 1 se mujhe sirf duplicate emails milengi."
+## 4. Top 5 Salary
 
 ```sql
-SELECT email, COUNT(*) AS count
-FROM Users
-GROUP BY email
-HAVING COUNT(*) > 1;
+SELECT DISTINCT salary
+FROM Employees
+ORDER BY salary DESC
+LIMIT 5;
 ```
-
-> "Duplicates remove karne ke liye main table ko khud ke saath self JOIN karunga. Same email wale records mein jis record ki ID badi hai usko delete karunga, aur smallest ID wale oldest record ko keep karunga."
-
-```sql
-DELETE u1
-FROM Users u1
-JOIN Users u2
-  ON u1.email = u2.email
- AND u1.id > u2.id;
-```
-
-> "Production mein DELETE se pehle main SELECT query se affected records verify karunga aur backup/transaction strategy follow karunga."
 
 ---
 
-# 🧠 Final Formula
+## 5. Total Employees
+
+```sql
+SELECT COUNT(*)
+FROM Employees;
+```
+
+---
+
+## 6. Department-Wise Count
+
+```sql
+SELECT department, COUNT(*)
+FROM Employees
+GROUP BY department;
+```
+
+---
+
+## 7. Department-Wise Highest Salary
+
+```sql
+SELECT department, MAX(salary)
+FROM Employees
+GROUP BY department;
+```
+
+---
+
+## 8. Salary > Average
+
+```sql
+SELECT *
+FROM Employees
+WHERE salary > (
+    SELECT AVG(salary)
+    FROM Employees
+);
+```
+
+---
+
+## 9. NULL Check
+
+```sql
+SELECT *
+FROM Employees
+WHERE email IS NULL;
+```
+
+---
+
+## 10. Prevent Duplicate Email
+
+```sql
+ALTER TABLE Employees
+ADD CONSTRAINT unique_email UNIQUE (email);
+```
+
+---
+
+# 🧠 Interview Formula
 
 ```text
-DUPLICATE FIND
+Duplicate
+→ GROUP BY + COUNT + HAVING
 
+Second Highest
+→ ORDER BY DESC + OFFSET
+→ OR MAX + Subquery
+
+Nth Highest
+→ LIMIT/OFFSET
+→ OR DENSE_RANK()
+
+Top N
+→ ORDER BY DESC + LIMIT
+
+Total Count
+→ COUNT(*)
+
+Group Count
+→ GROUP BY + COUNT
+
+Highest
+→ GROUP BY + MAX
+
+Greater Than Average
+→ AVG + Subquery
+
+NULL
+→ IS NULL / IS NOT NULL / COALESCE
+
+Prevent Duplicate
+→ UNIQUE Constraint
+```
+
+# 🎯 Most Important Concepts From These 10 Questions
+
+```text
+SELECT
+WHERE
 GROUP BY
-    ↓
-COUNT
-    ↓
-HAVING > 1
-
-
-DUPLICATE DELETE
-
-SELF JOIN
-    ↓
-SAME EMAIL
-    ↓
-COMPARE ID
-    ↓
-SMALL ID = OLD RECORD = KEEP
-    ↓
-LARGE ID = DUPLICATE = DELETE
+HAVING
+ORDER BY
+LIMIT
+OFFSET
+DISTINCT
+COUNT()
+MAX()
+AVG()
+COALESCE()
+Subquery
+Self JOIN
+DENSE_RANK()
+UNIQUE
+NULL
 ```
 
-# ✅ Q7 Complete
+# ⭐ Interview Tip
 
-- Find duplicate emails
-- `GROUP BY`
-- `COUNT(*)`
-- `HAVING`
-- Remove duplicates
-- Self JOIN
-- Keep oldest record
-- Delete newer duplicate
-- Production safety
-- Interview explanation
+Question ko dekhte hi identify karo:
+
+```text
+Duplicate?
+→ GROUP BY + HAVING
+
+Highest?
+→ MAX()
+
+Average?
+→ AVG()
+
+Count?
+→ COUNT()
+
+Department-wise?
+→ GROUP BY department
+
+Top N?
+→ ORDER BY DESC + LIMIT
+
+Nth Highest?
+→ ORDER BY + OFFSET
+→ DENSE_RANK()
+
+NULL?
+→ IS NULL / COALESCE()
+
+Future Duplicate Prevention?
+→ UNIQUE
+```
+
+# ✅ SQL Interview Set — Q1 to Q10 Complete
+
+Ye 10 questions SQL ke basic + practical interview concepts cover karte hain:
+
+1. Duplicate records find & remove
+2. Second highest salary
+3. Nth highest salary
+4. Top 5 highest salary
+5. Total employee count
+6. Department-wise employee count
+7. Department-wise highest salary
+8. Salary greater than average
+9. NULL handling
+10. Duplicate email prevention
