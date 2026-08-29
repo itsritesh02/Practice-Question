@@ -304,34 +304,34 @@ A suitable index query ko significantly faster bana sakta hai.
 
 # Q5 — MongoDB Query Optimization
 
-## प्रश्न
+## Question
 
-एक MongoDB query सामान्य रूप से **100 ms** लेती है, लेकिन production में वही query अब **12 seconds** ले रही है।
+A MongoDB query that normally takes **100 ms** is now taking **12 seconds** in production.
 
-बताइए कि आप इसे step-by-step कैसे investigate और optimize करेंगे।
+Explain, step by step, how you would investigate and optimize it.
 
-### उत्तर में ये points शामिल होने चाहिए:
+### Your answer should include:
 
 - `explain()`
 - `executionStats`
-- Index Analysis
-- Aggregation Optimization
+- Index analysis
+- Aggregation optimization
 - Projection
 - Pagination
 - Logging
-- Performance Testing
+- Performance testing
 
 ---
 
-# उत्तर
+# Answer
 
-अगर MongoDB की कोई query पहले **100 ms** ले रही थी और अब production में **12 seconds** ले रही है, तो मैं इसे step-by-step investigate करूँगा।
+अगर MongoDB की कोई query normally **100 ms** ले रही है और production में वही query **12 seconds** ले रही है, तो मैं इसे step-by-step investigate और optimize करूँगा।
 
 ---
 
 ## 1. Slow Query को Identify करना
 
-सबसे पहले मैं यह identify करूँगा कि कौन-सी exact MongoDB query 12 seconds ले रही है।
+सबसे पहले मैं identify करूँगा कि कौन-सी exact MongoDB query 12 seconds ले रही है।
 
 Example:
 
@@ -339,3 +339,302 @@ Example:
 db.users.find({
   email: "test@gmail.com"
 });
+```
+
+मैं यह भी check करूँगा कि query हर बार slow है या सिर्फ किसी specific request या data के लिए slow हो रही है।
+
+---
+
+## 2. `explain()` का इस्तेमाल करना
+
+इसके बाद मैं `explain("executionStats")` का इस्तेमाल करूँगा।
+
+```javascript
+db.users.find({
+  email: "test@gmail.com"
+}).explain("executionStats");
+```
+
+`explain()` से पता चलता है कि MongoDB query को किस तरीके से execute कर रहा है।
+
+मैं mainly ये values check करूँगा:
+
+- `executionTimeMillis`
+- `totalDocsExamined`
+- `totalKeysExamined`
+- `nReturned`
+
+---
+
+## 3. `executionStats` को Analyze करना
+
+मैं check करूँगा कि MongoDB कितने documents examine कर रहा है और कितने documents वास्तव में return कर रहा है।
+
+Example:
+
+```text
+nReturned: 10
+totalDocsExamined: 1000000
+```
+
+इसका मतलब है कि MongoDB ने सिर्फ **10 documents return किए**, लेकिन **10 लाख documents examine किए**।
+
+इससे पता चल सकता है कि query efficiently optimized नहीं है या appropriate index का इस्तेमाल नहीं हो रहा है।
+
+---
+
+## 4. Index Analysis
+
+मैं query का execution plan check करूँगा।
+
+अगर execution plan में:
+
+```text
+COLLSCAN
+```
+
+आ रहा है, तो MongoDB पूरी collection को scan कर रहा है।
+
+अगर:
+
+```text
+IXSCAN
+```
+
+आ रहा है, तो MongoDB index का इस्तेमाल कर रहा है।
+
+### Existing Indexes Check करना
+
+```javascript
+db.users.getIndexes();
+```
+
+अगर required index मौजूद नहीं है, तो query के अनुसार appropriate index create करूँगा।
+
+Example:
+
+```javascript
+db.users.createIndex({
+  email: 1
+});
+```
+
+अगर query में multiple fields हैं, तो compound index भी इस्तेमाल कर सकता हूँ।
+
+Example:
+
+```javascript
+db.users.createIndex({
+  status: 1,
+  email: 1
+});
+```
+
+Index create करने के बाद मैं `explain()` दोबारा run करूँगा और performance compare करूँगा।
+
+---
+
+## 5. Aggregation Optimization
+
+अगर slow operation aggregation pipeline का इस्तेमाल कर रहा है, तो मैं pipeline के सभी stages को check करूँगा।
+
+Example:
+
+```javascript
+db.orders.aggregate([
+  { $match: { status: "completed" } },
+  { $sort: { createdAt: -1 } },
+  { $project: { customer: 1, total: 1 } }
+]);
+```
+
+मैं `$match` को जितना possible हो early stage पर रखूँगा ताकि आगे के stages में कम documents process हों।
+
+मैं unnecessary expensive operations को भी avoid या optimize करूँगा, जैसे:
+
+- `$lookup`
+- `$unwind`
+- `$sort`
+
+Filtering और sorting में इस्तेमाल होने वाले fields के लिए appropriate indexes भी check करूँगा।
+
+---
+
+## 6. Projection
+
+अगर application को पूरे document की जरूरत नहीं है, तो मैं सिर्फ required fields return करूँगा।
+
+Example:
+
+```javascript
+db.users.find(
+  { email: "test@gmail.com" },
+  { name: 1, email: 1 }
+);
+```
+
+इससे unnecessary data return और transfer कम होगा।
+
+---
+
+## 7. Pagination
+
+अगर query बहुत सारे documents return कर रही है, तो मैं pagination check करूँगा।
+
+छोटे datasets के लिए:
+
+```javascript
+db.users.find({})
+  .skip(20)
+  .limit(10);
+```
+
+लेकिन बहुत बड़े datasets में बड़े `skip()` values inefficient हो सकते हैं।
+
+ऐसे cases में मैं cursor-based या range-based pagination इस्तेमाल करूँगा।
+
+इसके लिए `_id` या `createdAt` जैसे indexed fields का इस्तेमाल किया जा सकता है।
+
+---
+
+## 8. Logging
+
+मैं MongoDB और application logs भी check करूँगा ताकि पता चल सके कि query कब और क्यों slow हुई।
+
+मैं check करूँगा:
+
+- Slow query logs
+- Query frequency
+- Query duration
+- Errors
+- Timeouts
+- Increased traffic
+- Recent code changes
+- Recent database changes
+- Recent index changes
+
+मैं current production performance को उस समय की performance से भी compare करूँगा जब query सिर्फ 100 ms ले रही थी।
+
+---
+
+## 9. Production Resources Check करना
+
+क्योंकि issue production में आ रहा है, इसलिए सिर्फ query ही नहीं बल्कि production environment भी check करूँगा।
+
+मैं check करूँगा:
+
+- CPU usage
+- Memory usage
+- Disk I/O
+- Network latency
+- Database load
+- Concurrent queries
+- Connection pool
+- Collection size
+- Recent deployments
+
+कभी-कभी query सही होने के बावजूद production में ज्यादा load या resource contention के कारण query slow हो सकती है।
+
+---
+
+## 10. Performance Testing
+
+Optimization करने के बाद मैं query को realistic data के साथ test करूँगा।
+
+### Before
+
+```text
+100 ms → 12 seconds
+```
+
+### After
+
+Optimization के बाद नया execution time check करूँगा।
+
+फिर `explain()` दोबारा run करूँगा:
+
+```javascript
+db.users.find({
+  email: "test@gmail.com"
+}).explain("executionStats");
+```
+
+मैं compare करूँगा:
+
+- `executionTimeMillis`
+- `totalDocsExamined`
+- `totalKeysExamined`
+- `nReturned`
+
+अगर performance improve होती है, तो deployment के बाद भी query को monitor करूँगा।
+
+---
+
+# Interview Explanation
+
+अगर interviewer पूछता है कि आप इस problem को कैसे solve करेंगे, तो आप ऐसे explain कर सकते हैं:
+
+> **"Agar MongoDB ki koi query normally 100 milliseconds le rahi hai aur production mein 12 seconds le rahi hai, to sabse pehle main exact slow query identify karunga."**
+
+> **"Uske baad main `explain("executionStats")` use karunga, jisse mujhe pata chalega ki MongoDB query ko kaise execute kar raha hai."**
+
+> **"Main mainly `executionTimeMillis`, `totalDocsExamined`, `totalKeysExamined` aur `nReturned` check karunga."**
+
+> **"Agar execution plan mein `COLLSCAN` aa raha hai, iska matlab MongoDB collection scan kar raha hai. Main query ke according appropriate index create karunga aur query ko dobara `explain()` karke check karunga."**
+
+> **"Agar aggregation pipeline hai, to main `$match` ko early stage par rakhunga aur unnecessary `$lookup`, `$unwind` aur `$sort` ko optimize karunga."**
+
+> **"Main projection se sirf required fields return karunga aur large datasets ke liye pagination ko bhi optimize karunga."**
+
+> **"Saath hi main logs, CPU, memory, disk I/O, network latency, concurrent queries aur connection pool check karunga."**
+
+> **"Finally, optimization ke baad `explain("executionStats")` dobara run karke before aur after performance compare karunga aur production mein monitor karunga."**
+
+---
+
+# COLLSCAN vs IXSCAN
+
+## COLLSCAN
+
+`COLLSCAN` का मतलब है कि MongoDB पूरी collection के documents को scan करके required data find कर रहा है।
+
+अगर collection बहुत बड़ी है, तो unnecessary collection scan query को slow कर सकता है।
+
+---
+
+## IXSCAN
+
+`IXSCAN` का मतलब है कि MongoDB index के through matching documents को find कर रहा है।
+
+अगर appropriate index मौजूद है, तो query काफी faster हो सकती है।
+
+---
+
+# Easy Flow to Remember
+
+**Slow Query → `explain()` → `executionStats` → Index Analysis → Aggregation Optimization → Projection → Pagination → Logging → Production Resources → Performance Testing → Re-test**
+
+---
+
+# Short Interview Answer
+
+> **"Main pehle slow query identify karunga aur `explain("executionStats")` se execution plan check karunga. `executionTimeMillis`, `totalDocsExamined`, `totalKeysExamined` aur `nReturned` analyze karunga. Agar `COLLSCAN` ho raha hai to appropriate index create karunga. Aggregation mein `$match` ko early stage par rakhunga aur unnecessary expensive stages optimize karunga. Projection aur pagination se unnecessary data processing kam karunga. Saath hi logs aur production resources check karunga. Finally `explain()` dobara run karke performance compare karunga."**
+
+---
+
+# Key Points
+
+| Area | What to Check |
+|---|---|
+| Query Plan | `COLLSCAN` vs `IXSCAN` |
+| Execution Time | `executionTimeMillis` |
+| Documents | `totalDocsExamined` |
+| Index Keys | `totalKeysExamined` |
+| Result | `nReturned` |
+| Indexes | `getIndexes()` |
+| Aggregation | `$match`, `$lookup`, `$unwind`, `$sort` |
+| Projection | Only required fields |
+| Pagination | Avoid large `skip()` |
+| Logging | Slow queries, errors, timeouts |
+| Production | CPU, memory, disk, network, load |
+| Testing | Before vs After |
