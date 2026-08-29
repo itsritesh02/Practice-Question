@@ -298,3 +298,44 @@ A suitable index query ko significantly faster bana sakta hai.
 # Short Interview Answer
 
 > "Main pehle slow query identify karunga aur `explain("executionStats")` se execution plan check karunga. `executionTimeMillis`, `totalDocsExamined`, `totalKeysExamined` aur `nReturned` analyze karunga. Agar `COLLSCAN` ho raha hai to appropriate index create karunga. Aggregation mein `$match` ko early stage par rakhunga aur unnecessary expensive stages optimize karunga. Projection aur pagination se unnecessary data processing kam karunga. Saath hi logs aur production resources check karunga. Finally `explain()` dobara run karke performance compare karunga."
+
+
+
+
+# Q5 — MongoDB Query Optimization
+
+## प्रश्न
+
+एक MongoDB query सामान्य रूप से **100 ms** लेती है, लेकिन production में वही query अब **12 seconds** ले रही है।
+
+बताइए कि आप इसे step-by-step कैसे investigate और optimize करेंगे।
+
+### उत्तर में ये points शामिल होने चाहिए:
+
+- `explain()`
+- `executionStats`
+- Index Analysis
+- Aggregation Optimization
+- Projection
+- Pagination
+- Logging
+- Performance Testing
+
+---
+
+# उत्तर
+
+अगर MongoDB की कोई query पहले **100 ms** ले रही थी और अब production में **12 seconds** ले रही है, तो मैं इसे step-by-step investigate करूँगा।
+
+---
+
+## 1. Slow Query को Identify करना
+
+सबसे पहले मैं यह identify करूँगा कि कौन-सी exact MongoDB query 12 seconds ले रही है।
+
+Example:
+
+```javascript
+db.users.find({
+  email: "test@gmail.com"
+});
